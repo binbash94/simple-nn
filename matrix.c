@@ -19,8 +19,7 @@ void mat_size(const Matrix *m); // return size of matrix
 
 Matrix* mat_mul(Matrix *product, const Matrix *first, const Matrix *second); // dot product of two matricies.
 Matrix* mat_add(Matrix *product, const Matrix *first, const Matrix *second); // adds two matricies
-Matrix* mat_sub(Matrix *product, const Matrix *first, const Matrix *second); // subtracts to matricies
-Matrix* mat_div(const Matrix *m, float num_test_examples); // divides each element by num_test_samples
+Matrix* mat_div(Matrix *m, float scalar); // divides each element by scalar
 
 
 int main()
@@ -38,7 +37,7 @@ void mat_fill(Matrix *m, float v)
 {
 	if (!m || !m->data) return;
 	size_t n = (size_t)m->rows * (size_t)m->cols; // m is a 1D flat array of rows and cols in memory
-	for(int i = 0; i < n; i++)
+	for(size_t i = 0; i < n; i++)
 	{
 		m->data[i] = v;
 	}
@@ -76,8 +75,7 @@ Matrix* mat_mul(Matrix *product, const Matrix *first, const Matrix *second)
             float sum = 0.0f;
 
             for (int k = 0; k < first->cols; k++) {
-                sum += first->data[i * first->cols + k]
-                     * second->data[k * second->cols + j];
+                sum += first->data[i * first->cols + k] * second->data[k * second->cols + j];
             }
 
             product->data[i * second->cols + j] = sum;
@@ -94,7 +92,7 @@ Matrix* mat_add(Matrix *product, const Matrix *first, const Matrix *second)
 	if (product->rows != first->rows || product->cols != first->cols) return NULL;
 	if (product->rows != second->rows || product->cols != second->cols) return NULL;
 
-	size_t n = first->rows * first->cols;
+	size_t n = (size_t)first->rows * (size_t)first->cols;
 
 	for(int i = 0; i < n ; i++)
 	{
@@ -102,4 +100,20 @@ Matrix* mat_add(Matrix *product, const Matrix *first, const Matrix *second)
 	}
 
 	return product;
+}
+
+Matrix* mat_div(Matrix *m, float scalar)
+{
+	// TODO: use optimizations like BLAS SIMD
+	if(!m || !m->data) return NULL;
+	if(scalar == 0.0f) return NULL;
+
+	size_t n = (size_t)m->rows * (size_t)m->cols;
+
+	for(size_t i = 0; i < n; i++)
+	{
+		m->data[i] /= scalar;
+	}
+
+	return m;
 }
