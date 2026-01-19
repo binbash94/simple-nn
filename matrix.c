@@ -37,6 +37,48 @@ void mat_size(const Matrix *m)
 	printf("size: %d x %d", m->rows, m->cols);
 }
 
+void mat_scale(Matrix* m, float scalar)
+{
+	size_t n = (size_t)m->rows * (size_t)m->cols;
+
+	for (int i = 0; i < n; i ++)
+	{
+		m->data[i] *= scalar;
+	}
+}
+
+Matrix* mat_mul_AT_B(Matrix *product, const Matrix *first, const Matrix *second)
+{
+    if (!product || !first || !second) return NULL;
+    if (!product->data || !first->data || !second->data) return NULL;
+
+    // first:  (m × n)
+    // second: (m × p)
+    // product:(n × p)
+    if (first->rows != second->rows) return NULL;
+    if (product->rows != first->cols) return NULL;
+    if (product->cols != second->cols) return NULL;
+
+    int m = first->rows;
+    int n = first->cols;
+    int p = second->cols;
+
+    for (int i = 0; i < n; i++) {          // rows of first
+        for (int j = 0; j < p; j++) {      // cols of second
+
+            float sum = 0.0f;
+
+            for (int k = 0; k < m; k++) {  // rows of first or second
+                sum += first->data[k * n + i] * second->data[k * p + j]; 
+            }
+
+            product->data[i * p + j] = sum;
+        }
+    }
+
+    return product;
+}
+
 Matrix* mat_mul(Matrix *product, const Matrix *first, const Matrix *second)
 {
 	// TODO: use optimizations like BLAS SIMD
