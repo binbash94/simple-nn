@@ -27,10 +27,17 @@ void dense_zero_grads(DenseLayer* layer);
 
 typedef struct 
 {
+    Matrix A; // cache output of A = act_sigmoid(Z) for backward prop
+
 } Sigmoid;
+
+void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training);
+void sigmoid_backward(Sigmoid *s, const Matrix* dA, Matrix* dZ_out);
 
 typedef struct
 {
+    Matrix Z; // pre-activation cache
+
 } ReLU;
 
 
