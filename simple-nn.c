@@ -49,9 +49,6 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
 
     mat_mul(Z_out, &layer->W, X);
 
-    // (r*num->cols + c)
-    // for [0,0] = 0
-
     for (int i = 0; i < Z_out->rows; i++) 
     {
         float bi = layer->b.data[i]; // b is (out_dim x 1)
@@ -60,6 +57,11 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
         }
     }
 
+    if (training) // cache params for backprop
+    {
+        mat_copy((Matrix*)X, &layer->X);
+        mat_copy(Z_out, &layer->Z);
+    }
 }
 
 
