@@ -1,5 +1,6 @@
 #include <matrix.h>
 #include <stdbool.h>
+#include <math.h>
 
 typedef struct 
 {
@@ -52,7 +53,9 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
     for (int i = 0; i < Z_out->rows; i++) 
     {
         float bi = layer->b.data[i]; // b is (out_dim x 1)
-        for (int j = 0; j < Z_out->cols; j++) {
+
+        for (int j = 0; j < Z_out->cols; j++) 
+        {
             Z_out->data[i * Z_out->cols + j] += bi;
         }
     }
@@ -61,6 +64,21 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
     {
         mat_copy((Matrix*)X, &layer->X);
         mat_copy(Z_out, &layer->Z);
+    }
+}
+
+void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training)
+{
+    size_t n = (size_t)Z->rows * (size_t)Z->cols * sizeof(float);
+
+    for (int i = 0; i < n; i++)
+    {
+        A_out->data[i] = 1.0f / ( 1.0f + expf(-1.0f * Z->data[i]) );
+    }
+
+    if (training)
+    {
+        mat_copy(A_out, &s->A);
     }
 }
 
