@@ -27,7 +27,7 @@ void dense_zero_grads(DenseLayer* layer);
 
 typedef struct 
 {
-    Matrix A; // cache output of A = act_sigmoid(Z) for backward prop
+    Matrix A; // cache output of A = sigmoid_forward(Z) for backward prop
 
 } Sigmoid;
 
@@ -36,9 +36,32 @@ void sigmoid_backward(Sigmoid *s, const Matrix* dA, Matrix* dZ_out);
 
 typedef struct
 {
-    Matrix Z; // pre-activation cache
+    Matrix A; // cache output of A = reLU_forward(Z) for backward prop
 
 } ReLU;
+
+void relu_forward(ReLU* layer, const Matrix* X, Matrix *A_out, bool training);
+void relu_backward(ReLU* layer, const Matrix* dA, Matrix* dZ_out);
+
+void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool training)
+{
+    if (!X->data || !Z_out->data) return;
+
+    mat_mul(Z_out, &layer->W, X);
+
+    // (r*num->cols + c)
+    // for [0,0] = 0
+
+    for (int i = 0; i < Z_out->rows; i++) 
+    {
+        float bi = layer->b.data[i]; // b is (out_dim x 1)
+        for (int j = 0; j < Z_out->cols; j++) {
+            Z_out->data[i * Z_out->cols + j] += bi;
+        }
+    }
+
+}
+
 
 
 
