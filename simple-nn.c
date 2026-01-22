@@ -69,7 +69,7 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
 
 void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training)
 {
-    size_t n = (size_t)Z->rows * (size_t)Z->cols * sizeof(float);
+    size_t n = (size_t)Z->rows * (size_t)Z->cols;
 
     for (int i = 0; i < n; i++)
     {
