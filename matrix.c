@@ -47,6 +47,23 @@ void mat_scale(Matrix* m, float scalar)
 	}
 }
 
+void mat_sum_cols(Matrix* dst, const Matrix* src)
+{
+	if (!dst->data || !src->data) return;
+
+	for(int i = 0; i < dst->rows; i++)
+	{
+		float sum = 0.0f;
+
+		for(int j = 0; j < dst->cols; j++)
+		{
+			sum += dst->data[i*dst->cols + j];
+		}
+		
+		src->data[i] = sum;
+	}
+}
+
 Matrix* mat_mul_AT_B(Matrix *product, const Matrix *first, const Matrix *second)
 {
     if (!product || !first || !second) return NULL;

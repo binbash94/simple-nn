@@ -15,6 +15,7 @@ void mat_copy(Matrix *first, Matrix *second); // copys matrix from first to seco
 void mat_free(Matrix *m); // free allocated memory for matrix m
 void mat_size(const Matrix *m); // return size of matrix
 void mat_scale(Matrix* m, float scalar); // scale a matrix by some scalar
+void mat_sum_cols(Matrix* dst, const Matrix* src); // add each col of src to row of dst
 
 
 Matrix* mat_mul(Matrix *product, const Matrix *first, const Matrix *second); // dot product of two matricies.
