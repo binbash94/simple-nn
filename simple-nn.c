@@ -48,7 +48,7 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
 {
     if (!X->data || !Z_out->data) return;
 
-    mat_mul(Z_out, &layer->W, X);
+    mat_mul(Z_out, &layer->W, X); // Z = W*A 
 
     for (int i = 0; i < Z_out->rows; i++) 
     {
@@ -56,7 +56,7 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
 
         for (int j = 0; j < Z_out->cols; j++) 
         {
-            Z_out->data[i * Z_out->cols + j] += bi;
+            Z_out->data[i * Z_out->cols + j] += bi; // Z = W*A + b
         }
     }
 
@@ -80,6 +80,17 @@ void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training)
     {
         mat_copy(A_out, &s->A);
     }
+}
+
+void relu_forward(ReLU* layer, const Matrix* Z, Matrix *A_out, bool training)
+{
+    size_t n = (size_t)Z->rows * (size_t)Z->cols;
+
+    for (int i = 0; i < n; i++)
+    {
+        A_out->data[i] = (Z->data[i] > 0.0f) ? Z->data[i] : 0;
+    }
+
 }
 
 
