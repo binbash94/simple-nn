@@ -128,22 +128,3 @@ void relu_forward(ReLU* layer, const Matrix* Z, Matrix *A_out, bool training)
 
 }
 
-
-
-//----
-
-
-typedef struct
-{
-    int nx; // in_dim
-    int nh; // hidden_layer size
-    int ny; // out_dim
-} LayerDims;
-
-
-void initialize_params(LayerDims* layer_dim)
-{
-    
-}
-
-

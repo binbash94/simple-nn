@@ -55,12 +55,12 @@ void mat_sum_cols(Matrix* dst, const Matrix* src)
 	{
 		float sum = 0.0f;
 
-		for(int j = 0; j < dst->cols; j++)
+		for(int j = 0; j < src->cols; j++)
 		{
-			sum += dst->data[i*dst->cols + j];
+			sum += src->data[i*src->cols + j];
 		}
 		
-		src->data[i] = sum;
+		dst->data[i] = sum;
 	}
 }
 
