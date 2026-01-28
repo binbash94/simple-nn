@@ -150,3 +150,35 @@ Matrix* mat_div(Matrix *m, float scalar)
 
 	return m;
 }
+
+void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B)
+{
+    if (!A || !B || !C) return;
+    if (!A->data || !B->data || !C->data) return;
+
+    // A: (m x n)
+    // B: (p x n)
+    // C: (m x p)
+    if (A->cols != B->cols) return;
+    if (C->rows != A->rows || C->cols != B->rows) return;
+
+    int m = A->rows;
+    int n = A->cols;
+    int p = B->rows;
+
+    // Compute C[i,j] = sum_k A[i,k] * B[j,k]
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < p; ++j) {
+
+            float sum = 0.0f;
+
+            // Inner dot product between:
+            // row i of A  and  row j of B
+            for (int k = 0; k < n; ++k) {
+                sum += A->data[i * n + k] * B->data[j * n + k];
+            }
+
+            C->data[i * p + j] = sum;
+        }
+    }
+}

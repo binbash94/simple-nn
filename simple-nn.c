@@ -20,26 +20,28 @@ typedef struct
 
 } DenseLayer;
 
-void dense_init(DenseLayer* layer, int in_dim, int out_dim);
-void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool training);
-void dense_backward(DenseLayer* layer, Matrix* dZ, Matrix* dX_out);
-void dense_free(DenseLayer* layer);
-void dense_zero_grads(DenseLayer* layer);
-
 typedef struct 
 {
     Matrix A; // cache output of A = sigmoid_forward(Z) for backward prop
 
 } Sigmoid;
 
-void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training);
-void sigmoid_backward(Sigmoid *s, const Matrix* dA, Matrix* dZ_out);
-
 typedef struct
 {
     Matrix A; // cache output of A = reLU_forward(Z) for backward prop
 
 } ReLU;
+
+void dense_init(DenseLayer* layer, int in_dim, int out_dim);
+void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool training);
+void dense_backward(DenseLayer* layer, Matrix* dZ, Matrix* dA_out);
+void dense_free(DenseLayer* layer);
+void dense_zero_grads(DenseLayer* layer);
+
+
+void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training);
+void sigmoid_backward(Sigmoid *s, const Matrix* dA, Matrix* dZ_out);
+
 
 void relu_forward(ReLU* layer, const Matrix* X, Matrix *A_out, bool training);
 void relu_backward(ReLU* layer, const Matrix* dA, Matrix* dZ_out);
@@ -67,6 +69,34 @@ void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool train
     }
 }
 
+void dense_backward(DenseLayer* layer, Matrix* dZ, Matrix* dA_out)
+{
+    if (!layer || !dZ) return;
+
+    // dW = dZ * X^T
+    // dZ: (out_dim x batch)
+    // X : (in_dim x batch)
+    // dW: (out_dim x in_dim)
+    mat_mul_A_BT(&layer->dW, dZ, &layer->X);
+
+    // db = sum over columns of dZ
+    // db: (out_dim x 1)
+    mat_sum_cols(&layer->dB, dZ);
+
+    // dX = W^T * dZ   (only if caller wants it)
+    // W : (out_dim x in_dim)
+    // dZ: (out_dim x batch)
+    // dX: (in_dim x batch)
+    if (dA_out) {
+        mat_mul_AT_B(dA_out, &layer->W, dZ);
+    }
+
+    // Optional: average gradients over batch
+    float inv_batch = 1.0f / (float)dZ->cols;
+    mat_scale(&layer->dW, inv_batch);
+    mat_scale(&layer->dB, inv_batch);
+}
+
 void sigmoid_forward(Sigmoid *s, const Matrix* Z, Matrix* A_out, bool training)
 {
     size_t n = (size_t)Z->rows * (size_t)Z->cols;
@@ -91,8 +121,29 @@ void relu_forward(ReLU* layer, const Matrix* Z, Matrix *A_out, bool training)
         A_out->data[i] = (Z->data[i] > 0.0f) ? Z->data[i] : 0;
     }
 
+    if (training)
+    {
+        mat_copy(A_out, &layer->A);
+    }
+
 }
 
 
+
+//----
+
+
+typedef struct
+{
+    int nx; // in_dim
+    int nh; // hidden_layer size
+    int ny; // out_dim
+} LayerDims;
+
+
+void initialize_params(LayerDims* layer_dim)
+{
+    
+}
 
 
