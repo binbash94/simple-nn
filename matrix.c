@@ -47,6 +47,20 @@ void mat_scale(Matrix* m, float scalar)
 	}
 }
 
+void mat_sub(Matrix *A, const Matrix *B)
+{
+    if (!A || !B || !A->data || !B->data) return;
+
+    // Shapes must match
+    if (A->rows != B->rows || A->cols != B->cols) return;
+
+    size_t n = (size_t)A->rows * (size_t)A->cols;
+
+    for (size_t i = 0; i < n; ++i) {
+        A->data[i] -= B->data[i];
+    }
+}
+
 void mat_sum_cols(Matrix* dst, const Matrix* src)
 {
 	if (!dst->data || !src->data) return;
@@ -181,4 +195,20 @@ void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B)
             C->data[i * p + j] = sum;
         }
     }
+}
+
+bool mat_alloc(Matrix *m, int r, int c) 
+{
+    m->rows = r;
+    m->cols = c;
+    m->data = (float*)malloc((size_t)r * c * sizeof(float));
+    return m->data != NULL;
+}
+
+bool mat_alloc(Matrix *m, int r, int c) 
+{
+    m->rows = r;
+    m->cols = c;
+    m->data = (float*)malloc((size_t)r * c * sizeof(float));
+    return m->data != NULL;
 }

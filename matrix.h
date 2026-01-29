@@ -1,6 +1,7 @@
 // nn-matrix.h - minimal matrix library implementation
 #include <stdio.h>
 #include <libc.h>
+#include <stdbool.h>
 
 typedef struct {
 	int rows;
@@ -15,8 +16,12 @@ void mat_copy(Matrix *first, Matrix *second); // copys matrix from first to seco
 void mat_free(Matrix *m); // free allocated memory for matrix m
 void mat_size(const Matrix *m); // return size of matrix
 void mat_scale(Matrix* m, float scalar); // scale a matrix by some scalar
+void mat_sub(Matrix *A, const Matrix *B); // subtracts two matricies elemt wise
 void mat_sum_cols(Matrix* dst, const Matrix* src); // add each col of src to row of dst
 void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B);
+void mat_free(Matrix *m); // free memory
+
+bool mat_alloc(Matrix *m, int r, int c);
 
 
 Matrix* mat_mul(Matrix *product, const Matrix *first, const Matrix *second); // dot product of two matricies.
