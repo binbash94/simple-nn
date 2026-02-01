@@ -317,6 +317,10 @@ float mlp_train_step(MLP *m,
     /* =====================
        Forward pass
        ===================== */
+    assert(X->rows == m->input_dim);
+    assert(y->rows == 1);
+    assert(X->cols == y->cols);
+
 
     // Layer 1
     dense_forward(&m->fc1, X, &m->z1, true);
@@ -376,6 +380,14 @@ float mlp_train_step(MLP *m,
 
     return loss;
 }
+
+typedef struct
+{
+    Matrix *X_batches;
+    Matrix *Y_batches;
+    int num_batches;
+} Dataset;
+
 
 void mlp_train(MLP *m,
                Dataset *data,
