@@ -215,3 +215,16 @@ void mat_rand_uniform(Matrix *m, float min, float max)
 		m->data[i] = ((float)rand() / (float)RAND_MAX) * (max - min) + min;
 	}
 }
+
+void mat_add_bias_cols(Matrix *dst, const Matrix *bias)
+{
+	if (!dst || !bias || !dst->data || !bias->data) return;
+	if (bias->cols != 1) return;
+	if (bias->rows != dst->rows) return;
+
+	for (int col = 0; col < dst->cols; ++col) {
+		for (int row = 0; row < dst->rows; ++row) {
+			dst->data[row * dst->cols + col] += bias->data[row];
+		}
+	}
+}

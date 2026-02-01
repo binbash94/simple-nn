@@ -23,7 +23,7 @@ Matrix load_labels_h5(hid_t file, const char *dataset_name)
     for (size_t i = 0; i < m; i++)
         Y.data[i] = (float)tmp[i];
 
-    mat_free(tmp);
+    free(tmp);
     H5Sclose(space);
     H5Dclose(dset);
 
@@ -62,7 +62,7 @@ Matrix load_images_h5(hid_t file, const char *dataset_name)
         }
     }
 
-    mat_free(raw);
+    free(raw);
     H5Sclose(space);
     H5Dclose(dset);
 
@@ -80,8 +80,10 @@ Dataset load_dataset(const char *path,
     }
 
     Dataset d;
-    d.X_batches = load_images_h5(file, x_name);
-    d.Y_batches = load_labels_h5(file, y_name);
+    d.X_batches = malloc(sizeof(Matrix));
+    d.Y_batches = malloc(sizeof(Matrix));
+    d.X_batches[0] = load_images_h5(file, x_name);
+    d.Y_batches[0] = load_labels_h5(file, y_name);
     d.num_batches = 1;
 
     H5Fclose(file);
@@ -91,13 +93,21 @@ Dataset load_dataset(const char *path,
 
 int main()
 {
-    Dataset test = load_dataset("test_catvnoncat.h5", "test_set_x", "test_set_y");
+    Dataset train = load_dataset("../archive/train_catvsnoncat.h5", "train_set_x", "train_set_y");
 
     MLP mlp;
 
-    mlp_init(mlp, test.X_batches->rows, 512, 128, 1);
+    mlp_init(&mlp, train.X_batches->rows, 512, 128, 209);
 
-    mlp_train(&mlp, test, 10, 0.001f);
+    printf("X shape: rows = %d, cols = %d\n",
+       train.X_batches[0].rows,
+       train.X_batches[0].cols);
+
+    printf("Y shape: rows = %d, cols = %d\n",
+       train.Y_batches[0].rows,
+       train.Y_batches[0].cols);
+
+    mlp_train(&mlp, &train, 10, 0.01f);
 
     return 0;
 }

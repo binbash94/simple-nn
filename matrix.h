@@ -1,4 +1,6 @@
 // nn-matrix.h - minimal matrix library implementation
+#pragma once
+
 #include <stdio.h>
 #include <libc.h>
 #include <stdbool.h>
@@ -22,6 +24,7 @@ void mat_sum_cols(Matrix* dst, const Matrix* src); // add each col of src to row
 void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B);
 void mat_free(Matrix *m); // free memory
 void mat_rand_uniform(Matrix *m, float min, float max); // fills m with random values ranging from min to max
+void mat_add_bias_cols(Matrix *dst, const Matrix *bias);
 
 bool mat_alloc(Matrix *m, int r, int c);
 

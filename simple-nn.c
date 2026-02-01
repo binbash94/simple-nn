@@ -21,6 +21,16 @@ typedef struct
 
 } DenseLayer;
 
+typedef struct
+{
+    Matrix Z;   // cache pre-activation
+} ReLU;
+
+typedef struct
+{
+    Matrix A;   // cache output
+} Sigmoid;
+
 typedef struct {
     DenseLayer fc1;
     ReLU  relu1;
@@ -140,11 +150,6 @@ void dense_free(DenseLayer *l)
    ReLU
    ========================= */
 
-typedef struct
-{
-    Matrix Z;   // cache pre-activation
-} ReLU;
-
 void relu_init(ReLU *r, int rows, int max_batch)
 {
     mat_alloc(&r->Z, rows, max_batch);
@@ -182,11 +187,6 @@ void relu_free(ReLU *r)
 /* =========================
    Sigmoid
    ========================= */
-
-typedef struct
-{
-    Matrix A;   // cache output
-} Sigmoid;
 
 void sigmoid_init(Sigmoid *s, int rows, int max_batch)
 {
@@ -371,8 +371,8 @@ float mlp_train_step(MLP *m,
 
 typedef struct
 {
-    Matrix X_batches;
-    Matrix Y_batches;
+    Matrix *X_batches;
+    Matrix *Y_batches;
     int num_batches;
 } Dataset;
 
@@ -388,8 +388,8 @@ void mlp_train(MLP *m,
         for (int i = 0; i < data->num_batches; ++i) {
             epoch_loss += mlp_train_step(
                 m,
-                data.X_batches[i],
-                data.Y_batches[i],
+                &data->X_batches[i],
+                &data->Y_batches[i],
                 lr
             );
         }
