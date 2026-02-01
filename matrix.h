@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <libc.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct {
 	int rows;
@@ -20,6 +21,7 @@ void mat_sub(Matrix *A, const Matrix *B); // subtracts two matricies elemt wise
 void mat_sum_cols(Matrix* dst, const Matrix* src); // add each col of src to row of dst
 void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B);
 void mat_free(Matrix *m); // free memory
+void mat_rand_uniform(Matrix *m, float min, float max); // fills m with random values ranging from min to max
 
 bool mat_alloc(Matrix *m, int r, int c);
 

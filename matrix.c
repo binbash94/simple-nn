@@ -212,3 +212,14 @@ bool mat_alloc(Matrix *m, int r, int c)
     m->data = (float*)malloc((size_t)r * c * sizeof(float));
     return m->data != NULL;
 }
+
+void mat_rand_uniform(Matrix *m, float min, float max)
+{
+	size_t n = (size_t)m->rows * (size_t)m->cols;
+
+	for(size_t i = 0; i < n; i++)
+	{
+		// (float)rand() / (float)RAND_MAX) to normalize between 0 and 1
+		m->data[i] = ((float)rand() / (float)RAND_MAX) * (max - min) + min;
+	}
+}
