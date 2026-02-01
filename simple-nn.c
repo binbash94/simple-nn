@@ -1,6 +1,7 @@
 #include <matrix.h>
 #include <stdbool.h>
 #include <math.h>
+#include <assert.h>
 
 typedef struct 
 {
@@ -44,19 +45,6 @@ typedef struct {
     int hidden2;
     int max_batch;
 } MLP;
-
-
-typedef struct 
-{
-    Matrix A; // cache output of A = sigmoid_forward(Z) for backward prop
-
-} Sigmoid;
-
-typedef struct
-{
-    Matrix A; // cache output of A = reLU_forward(Z) for backward prop
-
-} ReLU;
 
 void dense_init(DenseLayer *l, int in_dim, int out_dim, int max_batch);
 void dense_forward(DenseLayer* layer, const Matrix* X, Matrix* Z_out, bool training);
@@ -383,8 +371,8 @@ float mlp_train_step(MLP *m,
 
 typedef struct
 {
-    Matrix *X_batches;
-    Matrix *Y_batches;
+    Matrix X_batches;
+    Matrix Y_batches;
     int num_batches;
 } Dataset;
 
@@ -400,8 +388,8 @@ void mlp_train(MLP *m,
         for (int i = 0; i < data->num_batches; ++i) {
             epoch_loss += mlp_train_step(
                 m,
-                &data->X_batches[i],
-                &data->Y_batches[i],
+                data.X_batches[i],
+                data.Y_batches[i],
                 lr
             );
         }

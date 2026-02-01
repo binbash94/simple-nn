@@ -17,12 +17,12 @@ void mat_fill(Matrix *m, float v)
 	}
 }
 
-void mat_copy(Matrix *first, Matrix *second)
+void mat_copy(Matrix *dst, const Matrix *src)
 {
-	if (!first || !second || !first->data || !second->data) return; 
-	if (first->rows != second->rows || first->cols != second->cols) return; 
+    if (!dst || !src || !dst->data || !src->data) return;
+    if (dst->rows != src->rows || dst->cols != src->cols) return;
 
-	memcpy(second->data, first->data, (size_t)second->rows * (size_t)second->cols * sizeof(float));
+    memcpy(dst->data, src->data, (size_t)src->rows * (size_t)src->cols * sizeof(float));
 }
 
 void mat_free(Matrix *m)
@@ -195,14 +195,6 @@ void mat_mul_A_BT(Matrix *C, const Matrix *A, const Matrix *B)
             C->data[i * p + j] = sum;
         }
     }
-}
-
-bool mat_alloc(Matrix *m, int r, int c) 
-{
-    m->rows = r;
-    m->cols = c;
-    m->data = (float*)malloc((size_t)r * c * sizeof(float));
-    return m->data != NULL;
 }
 
 bool mat_alloc(Matrix *m, int r, int c) 

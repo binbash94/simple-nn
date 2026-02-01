@@ -13,7 +13,7 @@ typedef struct {
 
 void mat_zero(Matrix *m); //sets all elements in matrix to 0
 void mat_fill(Matrix *m, float v); //fills all elements of the matrix with value v 
-void mat_copy(Matrix *first, Matrix *second); // copys matrix from first to second
+void mat_copy(Matrix *dst, const Matrix *src); // copys matrix from first to second
 void mat_free(Matrix *m); // free allocated memory for matrix m
 void mat_size(const Matrix *m); // return size of matrix
 void mat_scale(Matrix* m, float scalar); // scale a matrix by some scalar

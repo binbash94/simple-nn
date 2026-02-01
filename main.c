@@ -97,7 +97,7 @@ int main()
 
     mlp_init(mlp, test.X_batches->rows, 512, 128, 1);
 
-    mlp_train(MLP *m, Dataset *data, int epochs, float lr);
+    mlp_train(&mlp, test, 10, 0.001f);
 
     return 0;
 }
