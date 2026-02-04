@@ -97,7 +97,7 @@ int main()
 
     MLP mlp;
 
-    mlp_init(&mlp, train.X_batches->rows, 512, 128, 209);
+    mlp_init(&mlp, train.X_batches->rows, 16, 8, 209);
 
     printf("X shape: rows = %d, cols = %d\n",
        train.X_batches[0].rows,
@@ -107,7 +107,7 @@ int main()
        train.Y_batches[0].rows,
        train.Y_batches[0].cols);
 
-    mlp_train(&mlp, &train, 10, 0.01f);
+    mlp_train(&mlp, &train, 500, 0.0075f);
 
     return 0;
 }

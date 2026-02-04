@@ -249,6 +249,58 @@ void binary_cross_entropy_backward(const Matrix *A, const Matrix *Y, Matrix *dZ_
     }
 }
 
+typedef struct
+{
+    Matrix probs; // (C x m) probs, softmax output for backward prop
+    float loss; // mean loss over batch
+} SoftmaxCE;
+
+
+float softmax_ce_forward(const Matrix* Z, Matrix* Y_onehot, SoftmaxCE* head)
+{
+    float loss = 0.0f;
+
+    for (int i = 0; i < Z->cols; i++)
+    {
+        // get max_val for each example
+        float max_val = Z->data[0 * Z->cols + i]; // set max_val to the first val of each example Z.
+        for (int j = 0; j < Z->rows; j++)
+        {
+            float val = Z->data[j * Z->cols + i] ;
+            if ( val > max_val ) max_val = val;
+        }
+
+        // calc num term
+        float sum = 0.0f;
+        for (int j = 0; j < Z->rows; j++)
+        {
+            float e = expf(Z->data[j * Z->cols + i] - max_val);
+            head->probs.data[j * Z->cols + i] = e;
+            sum += e;
+        }
+
+        // normalize the probs
+        float inv_sum = 1 / sum;
+        for (int j = 0; j < Z->rows; j++)
+        {
+            head->probs.data[j * Z->cols + i] *= inv_sum;
+        }
+
+        // CE loss
+        for (int j = 0; j < Z->rows; j++)
+        {
+            float y = Y_onehot->data[j * Z->cols + i];
+            if (y > 0.0f)
+            {
+                float p = head->probs.data[j * Z->cols + i];
+                loss -= logf(p + 1e-9f);
+            }
+        }
+    }
+    head->loss = loss / Z->cols;
+    return head->loss;
+}
+
 bool mlp_init(MLP *m,
               int input_dim,
               int hidden1,
