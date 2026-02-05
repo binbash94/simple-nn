@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
 typedef struct 
 {
@@ -36,23 +37,23 @@ typedef struct {
     ReLU  relu1;
     DenseLayer fc2;
     ReLU  relu2;
-    DenseLayer fc3;     // output dim = 1
-
-    Sigmoid sigmoid;    // sigmoid + BCE
+    DenseLayer fc3;     // output dim = num_classes
 
     // Scratch buffers
     Matrix z1, a1;
     Matrix z2, a2;
-    Matrix logits;      // (1 x batch)
-    Matrix y_hat;       // (1 x batch)
+    Matrix logits;      // (num_classes x batch)
+    Matrix y_onehot;    // (num_classes x batch)
+    Matrix probs;       // (num_classes x batch)
 
-    Matrix dlogits;     // (1 x batch)
+    Matrix dlogits;     // (num_classes x batch)
     Matrix da2, dz2;
     Matrix da1, dz1;
 
     int input_dim;
     int hidden1;
     int hidden2;
+    int num_classes;
     int max_batch;
 } MLP;
 
@@ -74,7 +75,7 @@ void relu_backward(ReLU* layer, const Matrix* dA, Matrix* dZ_out);
 float binary_cross_entropy(const Matrix *A, const Matrix *Y);
 void binary_cross_entropy_backward(const Matrix *A, const Matrix *Y, Matrix *dZ_out);
 
-bool mlp_init(MLP *m, int input_dim, int hidden1, int hidden2, int max_batch);
+bool mlp_init(MLP *m, int input_dim, int hidden1, int hidden2, int num_classes, int max_batch);
 
 
 
@@ -301,10 +302,20 @@ float softmax_ce_forward(const Matrix* Z, Matrix* Y_onehot, SoftmaxCE* head)
     return head->loss;
 }
 
+void softmax_ce_backward(const SoftmaxCE *head, const Matrix *Y_onehot, Matrix *dZ_out)
+{
+    size_t n = (size_t)head->probs.rows * (size_t)head->probs.cols;
+
+    for (size_t i = 0; i < n; ++i) {
+        dZ_out->data[i] = head->probs.data[i] - Y_onehot->data[i];
+    }
+}
+
 bool mlp_init(MLP *m,
               int input_dim,
               int hidden1,
               int hidden2,
+              int num_classes,
               int max_batch)
 {
     if (!m) return false;
@@ -314,19 +325,17 @@ bool mlp_init(MLP *m,
     m->input_dim = input_dim;
     m->hidden1   = hidden1;
     m->hidden2   = hidden2;
+    m->num_classes = num_classes;
     m->max_batch = max_batch;
 
     /* ---------- Dense layers ---------- */
     dense_init(&m->fc1, input_dim, hidden1, max_batch);
     dense_init(&m->fc2, hidden1, hidden2, max_batch);
-    dense_init(&m->fc3, hidden2, 1,        max_batch);
+    dense_init(&m->fc3, hidden2, num_classes, max_batch);
 
     /* ---------- Activations ---------- */
     relu_init(&m->relu1, hidden1, max_batch);
     relu_init(&m->relu2, hidden2, max_batch);
-
-    // Sigmoid cache for output layer
-    mat_alloc(&m->sigmoid.A, 1, max_batch);
 
     /* ---------- Forward scratch buffers ---------- */
     mat_alloc(&m->z1, hidden1, max_batch);
@@ -335,11 +344,12 @@ bool mlp_init(MLP *m,
     mat_alloc(&m->z2, hidden2, max_batch);
     mat_alloc(&m->a2, hidden2, max_batch);
 
-    mat_alloc(&m->logits, 1, max_batch);
-    mat_alloc(&m->y_hat,  1, max_batch);
+    mat_alloc(&m->logits, num_classes, max_batch);
+    mat_alloc(&m->y_onehot, num_classes, max_batch);
+    mat_alloc(&m->probs, num_classes, max_batch);
 
     /* ---------- Backward scratch buffers ---------- */
-    mat_alloc(&m->dlogits, 1, max_batch);
+    mat_alloc(&m->dlogits, num_classes, max_batch);
     mat_alloc(&m->da2, hidden2, max_batch);
     mat_alloc(&m->dz2, hidden2, max_batch);
     mat_alloc(&m->da1, hidden1, max_batch);
@@ -351,7 +361,7 @@ bool mlp_init(MLP *m,
 
 float mlp_train_step(MLP *m,
                      const Matrix *X,   // (input_dim x batch)
-                     const Matrix *y,   // (1 x batch), values 0 or 1
+                     const Matrix *y,   // (1 x batch), class ids [0, num_classes)
                      float lr)
 {
     /* =====================
@@ -373,16 +383,27 @@ float mlp_train_step(MLP *m,
     // Output layer (logits)
     dense_forward(&m->fc3, &m->a2, &m->logits, true);
 
-    // Sigmoid + BCE
-    sigmoid_forward(&m->sigmoid, &m->logits, &m->y_hat, true);
-    float loss = binary_cross_entropy(&m->y_hat, y);
+    // One-hot labels
+    mat_zero(&m->y_onehot);
+    for (int i = 0; i < y->cols; ++i) {
+        int cls = (int)y->data[i];
+        if (cls >= 0 && cls < m->num_classes) {
+            m->y_onehot.data[cls * y->cols + i] = 1.0f;
+        }
+    }
+
+    SoftmaxCE head = {
+        .probs = m->probs,
+        .loss = 0.0f,
+    };
+    float loss = softmax_ce_forward(&m->logits, &m->y_onehot, &head);
 
     /* =====================
        Backward pass
        ===================== */
 
-    // dZ3 = y_hat - y
-    binary_cross_entropy_backward(&m->y_hat, y, &m->dlogits);
+    // dZ3 = probs - y_onehot
+    softmax_ce_backward(&head, &m->y_onehot, &m->dlogits);
 
     // Layer 3
     dense_backward(&m->fc3, &m->dlogits, &m->da2);
