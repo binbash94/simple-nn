@@ -1,5 +1,6 @@
 // nn-matrix.c - minimal matrix library implementation
 #include <matrix.h>
+#include <string.h>
 
 void mat_zero(Matrix *m)
 {

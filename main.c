@@ -1,113 +1,145 @@
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <matrix.h>
 #include <simple-nn.c>
 
-#include "hdf5.h"
-
-Matrix load_labels_h5(hid_t file, const char *dataset_name)
+static uint32_t read_be_u32(FILE *f)
 {
-    hid_t dset = H5Dopen(file, dataset_name, H5P_DEFAULT);
-    hid_t space = H5Dget_space(dset);
+    unsigned char b[4];
+    if (fread(b, 1, 4, f) != 4) {
+        return 0;
+    }
 
-    hsize_t dims[1];
-    H5Sget_simple_extent_dims(space, dims, NULL);
-    size_t m = dims[0];
-
-    unsigned char *tmp = malloc(m);
-    H5Dread(dset, H5T_NATIVE_UCHAR, H5S_ALL, H5S_ALL,
-            H5P_DEFAULT, tmp);
-
-    Matrix Y = {0};
-
-    mat_alloc(&Y, 1, m);
-
-    for (size_t i = 0; i < m; i++)
-        Y.data[i] = (float)tmp[i];
-
-    free(tmp);
-    H5Sclose(space);
-    H5Dclose(dset);
-
-    return Y;
+    return ((uint32_t)b[0] << 24) |
+           ((uint32_t)b[1] << 16) |
+           ((uint32_t)b[2] << 8) |
+           (uint32_t)b[3];
 }
 
-Matrix load_images_h5(hid_t file, const char *dataset_name)
+Matrix load_mnist_images_idx(const char *path)
 {
-    hid_t dset = H5Dopen(file, dataset_name, H5P_DEFAULT);
-    hid_t space = H5Dget_space(dset);
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        fprintf(stderr, "Failed to open image file: %s\n", path);
+        exit(1);
+    }
 
-    hsize_t dims[4];
-    H5Sget_simple_extent_dims(space, dims, NULL);
+    uint32_t magic = read_be_u32(f);
+    uint32_t count = read_be_u32(f);
+    uint32_t rows = read_be_u32(f);
+    uint32_t cols = read_be_u32(f);
 
-    size_t m = dims[0];
-    size_t H = dims[1]; 
-    size_t W = dims[2];
-    size_t C = dims[3];
+    if (magic != 2051) {
+        fprintf(stderr, "Invalid MNIST image magic number in %s\n", path);
+        exit(1);
+    }
 
-    size_t img_size = H * W * C;
+    size_t image_size = (size_t)rows * (size_t)cols;
+    unsigned char *raw = (unsigned char *)malloc((size_t)count * image_size);
+    if (!raw) {
+        fprintf(stderr, "Failed to allocate image buffer\n");
+        exit(1);
+    }
 
-    unsigned char *raw = malloc(m * img_size);
-
-    H5Dread(dset, H5T_NATIVE_UCHAR,
-            H5S_ALL, H5S_ALL,
-            H5P_DEFAULT, raw);
+    size_t expected = (size_t)count * image_size;
+    if (fread(raw, 1, expected, f) != expected) {
+        fprintf(stderr, "Failed to read all MNIST image bytes from %s\n", path);
+        exit(1);
+    }
 
     Matrix X = {0};
+    mat_alloc(&X, (int)image_size, (int)count);
 
-    mat_alloc(&X, img_size, m);
-
-    // NHWC → flattened column-major
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < img_size; j++) {
-            X.data[j + i * img_size] = raw[i * img_size + j] / 255.0f;
+    for (uint32_t i = 0; i < count; ++i) {
+        for (size_t j = 0; j < image_size; ++j) {
+            X.data[j + (size_t)i * image_size] = raw[(size_t)i * image_size + j] / 255.0f;
         }
     }
 
     free(raw);
-    H5Sclose(space);
-    H5Dclose(dset);
+    fclose(f);
 
     return X;
 }
 
-Dataset load_dataset(const char *path,
-                     const char *x_name,
-                     const char *y_name)
+Matrix load_mnist_labels_idx(const char *path)
 {
-    hid_t file = H5Fopen(path, H5F_ACC_RDONLY, H5P_DEFAULT);
-    if (file < 0) {
-        printf("Failed to open %s\n", path);
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        fprintf(stderr, "Failed to open label file: %s\n", path);
         exit(1);
     }
 
-    Dataset d;
+    uint32_t magic = read_be_u32(f);
+    uint32_t count = read_be_u32(f);
+
+    if (magic != 2049) {
+        fprintf(stderr, "Invalid MNIST label magic number in %s\n", path);
+        exit(1);
+    }
+
+    unsigned char *raw = (unsigned char *)malloc(count);
+    if (!raw) {
+        fprintf(stderr, "Failed to allocate label buffer\n");
+        exit(1);
+    }
+
+    if (fread(raw, 1, count, f) != count) {
+        fprintf(stderr, "Failed to read all MNIST label bytes from %s\n", path);
+        exit(1);
+    }
+
+    Matrix Y = {0};
+    mat_alloc(&Y, 1, (int)count);
+
+    for (uint32_t i = 0; i < count; ++i) {
+        Y.data[i] = (float)raw[i];
+    }
+
+    free(raw);
+    fclose(f);
+
+    return Y;
+}
+
+Dataset load_mnist_dataset(const char *images_path, const char *labels_path)
+{
+    Dataset d = {0};
     d.X_batches = malloc(sizeof(Matrix));
     d.Y_batches = malloc(sizeof(Matrix));
-    d.X_batches[0] = load_images_h5(file, x_name);
-    d.Y_batches[0] = load_labels_h5(file, y_name);
+    d.X_batches[0] = load_mnist_images_idx(images_path);
+    d.Y_batches[0] = load_mnist_labels_idx(labels_path);
     d.num_batches = 1;
 
-    H5Fclose(file);
+    if (d.X_batches[0].cols != d.Y_batches[0].cols) {
+        fprintf(stderr, "MNIST image/label sample counts do not match\n");
+        exit(1);
+    }
+
     return d;
 }
 
-
-int main()
+int main(int argc, char **argv)
 {
-    Dataset train = load_dataset("../archive/train_catvsnoncat.h5", "train_set_x", "train_set_y");
+    const char *images_path = "../archive/train-images-idx3-ubyte";
+    const char *labels_path = "../archive/train-labels-idx1-ubyte";
+
+    if (argc >= 3) {
+        images_path = argv[1];
+        labels_path = argv[2];
+    }
+
+    Dataset train = load_mnist_dataset(images_path, labels_path);
 
     MLP mlp;
+    mlp_init(&mlp, train.X_batches[0].rows, 128, 64, 10, train.X_batches[0].cols);
 
-    mlp_init(&mlp, train.X_batches->rows, 16, 8, 209);
+    printf("X shape: rows = %d, cols = %d\n", train.X_batches[0].rows, train.X_batches[0].cols);
+    printf("Y shape: rows = %d, cols = %d\n", train.Y_batches[0].rows, train.Y_batches[0].cols);
 
-    printf("X shape: rows = %d, cols = %d\n",
-       train.X_batches[0].rows,
-       train.X_batches[0].cols);
-
-    printf("Y shape: rows = %d, cols = %d\n",
-       train.Y_batches[0].rows,
-       train.Y_batches[0].cols);
-
-    mlp_train(&mlp, &train, 500, 0.0075f);
+    mlp_train(&mlp, &train, 40, 0.05f);
 
     return 0;
 }
