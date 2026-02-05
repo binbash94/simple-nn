@@ -92,12 +92,14 @@ void dense_init(DenseLayer *l, int in_dim, int out_dim, int max_batch)
     mat_alloc(&l->dW, out_dim, in_dim);
     mat_alloc(&l->dB, out_dim, 1);
 
-    mat_rand_uniform(&l->W, -0.01f, 0.01f);
+    // He initialization (uniform)
+    float limit = sqrtf(6.0f / in_dim);
+    mat_rand_uniform(&l->W, -limit, limit);
+
     mat_zero(&l->b);
     mat_zero(&l->dW);
     mat_zero(&l->dB);
 }
-
 void dense_zero_grads(DenseLayer *l)
 {
     mat_zero(&l->dW);
@@ -118,19 +120,15 @@ void dense_forward(DenseLayer *l, const Matrix *X, Matrix *Z_out, bool training)
 
 void dense_backward(DenseLayer *l, const Matrix *dZ, Matrix *dA_out)
 {
-    int batch = dZ->cols;
+    int B = dZ->cols;
 
-    // dW = dZ · X^T
     mat_mul_A_BT(&l->dW, dZ, &l->X);
-
-    // dB = sum_cols(dZ)
     mat_sum_cols(&l->dB, dZ);
 
-    float invB = 1.0f / (float)batch;
+    float invB = 1.0f / (float)B;
     mat_scale(&l->dW, invB);
     mat_scale(&l->dB, invB);
 
-    // dA = W^T · dZ
     if (dA_out) {
         mat_mul_AT_B(dA_out, &l->W, dZ);
     }

@@ -4,8 +4,6 @@ project(simple_nn C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-find_package(HDF5 REQUIRED COMPONENTS C)
-
 add_executable(simple-nn
     main.c
     matrix.c
@@ -13,12 +11,10 @@ add_executable(simple-nn
 
 target_include_directories(simple-nn
     PRIVATE
-        ${HDF5_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(simple-nn
     PRIVATE
-        ${HDF5_LIBRARIES}
         m
 )

@@ -123,8 +123,8 @@ Dataset load_mnist_dataset(const char *images_path, const char *labels_path)
 
 int main(int argc, char **argv)
 {
-    const char *images_path = "../archive/train-images-idx3-ubyte";
-    const char *labels_path = "../archive/train-labels-idx1-ubyte";
+    const char *images_path = "../archive/train-images.idx3-ubyte";
+    const char *labels_path = "../archive/train-labels.idx1-ubyte";
 
     if (argc >= 3) {
         images_path = argv[1];
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     printf("X shape: rows = %d, cols = %d\n", train.X_batches[0].rows, train.X_batches[0].cols);
     printf("Y shape: rows = %d, cols = %d\n", train.Y_batches[0].rows, train.Y_batches[0].cols);
 
-    mlp_train(&mlp, &train, 40, 0.05f);
+    mlp_train(&mlp, &train, 40, 0.1f);
 
     return 0;
 }
